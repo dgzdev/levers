@@ -4,6 +4,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 -- # Modules
 local ProfileService = require(ServerScriptService:WaitForChild("ProfileService"))
+local Runner = require(script:WaitForChild("Runner"))
 local Util = require(ReplicatedStorage:WaitForChild("Util"))
 
 local Profiles = require(ReplicatedStorage:WaitForChild("Profiles"))
@@ -43,4 +44,4 @@ local function PlayerLeft(Player: Player)
 end
 
 Players.PlayerAdded:Connect(PlayerAdded)
-Players.PlayerDisconnecting:Connect(PlayerLeft)
+Players.PlayerRemoving:Connect(PlayerLeft)
