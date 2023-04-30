@@ -1,6 +1,6 @@
 # Compiled Lua sources
 luac.out
-# qualquer merda
+
 # luarocks build files
 *.src.rock
 *.zip
@@ -39,3 +39,7 @@ luac.out
 *.x86_64
 *.hex
 
+# Place Files
+*.rbxl
+*.rbxm
+*.txt
