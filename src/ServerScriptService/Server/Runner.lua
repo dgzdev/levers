@@ -1,6 +1,9 @@
+local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 local Runner = {}
 
@@ -84,7 +87,91 @@ function Runner.GetRoom(Player: Player)
         local LeverModel = ReplicatedStorage:WaitForChild("Models"):WaitForChild("Lever"):Clone()
         LeverModel.Parent = Lever
         LeverModel:PivotTo(CFrame.new(Lever:GetPivot().Position))
-    end 
+    end
+
+    local Options = {true, false}
+    local Option = Options[Randomizer:NextInteger(1, #Options)]
+    local IsTheLevelDarker = Option == true
+
+    if IsTheLevelDarker then
+        -- # Fires all Clients
+        local Event = ReplicatedStorage:WaitForChild("Events"):WaitForChild("DarkenLevel") :: RemoteEvent
+        Event:FireAllClients()
+
+        local Childs = Room:GetDescendants()
+        for _, Child in ipairs(Childs) do
+            if not Child:IsDescendantOf(Room:WaitForChild("Lights")) then continue end
+
+            if Child:IsA("BasePart") and Child.Name:find("Light") then
+                Child = Child :: BasePart
+                Child.Color = Color3.new(.3,.3,.3)
+            end
+
+            if Child:IsA("PointLight") then
+                Child = Child :: PointLight
+                Child.Enabled = false
+            end
+        end
+
+        -- # Play the music for the level
+        local Music = SoundService:WaitForChild("Musics"):WaitForChild("DarkLevel")
+        if Music.IsPlaying == false then
+            Music.Volume = 0
+            TweenService:Create(Music, TweenInfo.new(1), {Volume = 0.5}):Play()
+            Music:Play()
+        end
+
+        -- # Stop the music for the light level
+        local LightMusic = SoundService:WaitForChild("Musics"):WaitForChild("LightLevel")
+        if LightMusic.IsPlaying == true then
+            local T = TweenService:Create(LightMusic, TweenInfo.new(1), {Volume = 0})
+            T:Play()
+            T.Completed:Once(function(playbackState)
+                LightMusic:Stop()
+            end)
+        end
+    else
+        -- # Fires all Clients
+        local Event = ReplicatedStorage:WaitForChild("Events"):WaitForChild("LightenLevel") :: RemoteEvent
+        Event:FireAllClients()
+
+        local Childs = Room:GetDescendants()
+        for _, Child in ipairs(Childs) do
+            if not Child:IsDescendantOf(Room:WaitForChild("Lights")) then continue end
+
+            if Child:IsA("BasePart") and Child.Name:find("Light") then
+                Child = Child :: BasePart
+                Child.Color = Color3.new(1, 0.949019, 0.843137)
+            end
+
+            if Child:IsA("PointLight") then
+                Child = Child :: PointLight
+                Child.Enabled = true
+                Child.Color = Color3.new(1, 0.949019, 0.843137)
+                Child.Brightness = .35
+                Child.Range = 26
+                Child.Shadows = true
+            end
+        end
+
+        -- # Play the music for the level
+        local Music = SoundService:WaitForChild("Musics"):WaitForChild("LightLevel")
+        if Music.IsPlaying == false then
+            Music.Volume = 0
+            TweenService:Create(Music, TweenInfo.new(1), {Volume = 0.5}):Play()
+            Music:Play()
+        end
+
+        -- # Stop the music for the dark level
+        local DarkMusic = SoundService:WaitForChild("Musics"):WaitForChild("DarkLevel")
+        if DarkMusic.IsPlaying == true then
+            local T = TweenService:Create(DarkMusic, TweenInfo.new(1), {Volume = 0})
+            T:Play()
+            T.Completed:Once(function(playbackState)
+                DarkMusic:Stop()
+            end)
+        end
+    end
 
     local AllLevelTextLabel = GetAllOf(Room, "LevelTextLabel") :: {TextLabel}
     for _, LevelTextLabel in ipairs(AllLevelTextLabel) do
@@ -127,6 +214,12 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt, Player: Player)
         local Elevator = Room:WaitForChild("Elevator") :: Model
         local Pos = Elevator:GetPivot()
 
+        local Sound = SoundService:WaitForChild("SFX"):WaitForChild("Elevator"):Clone()
+        Sound.Parent = Elevator
+        Sound:Play()
+        Debris:AddItem(Sound, 1)
+
+
         Character:PivotTo(CFrame.new(Pos.Position))
     end
 
@@ -134,6 +227,19 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt, Player: Player)
         local State = prompt:GetAttribute("Enabled") or false
         local NewState = not State
         prompt:SetAttribute("Enabled", NewState)
+
+        local SoundFolder = SoundService:WaitForChild("SFX")
+        if NewState == true then
+            local Sound = SoundFolder:WaitForChild("SwitchON"):Clone()
+            Sound.Parent = prompt.Parent
+            Sound:Play()
+            Debris:AddItem(Sound, 1)
+        elseif NewState == false then
+            local Sound = SoundFolder:WaitForChild("SwitchOFF"):Clone()
+            Sound.Parent = prompt.Parent
+            Sound:Play()
+            Debris:AddItem(Sound, 1)
+        end
 
         local NextLevelPrompt = CurrentRoom:FindFirstChild("NextLevelPrompt", true)
         NextLevelPrompt.Enabled = NewState
